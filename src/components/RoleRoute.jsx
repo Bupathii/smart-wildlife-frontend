@@ -1,11 +1,27 @@
 import { Navigate } from 'react-router-dom';
-import { canAccessPage, getCurrentUser } from '../config/roleAccess';
 
-function RoleRoute({ pageKey, children }) {
+import {
+  canAccessPage,
+  getCurrentUser,
+} from '../config/roleAccess';
+
+function RoleRoute({
+  pageKey,
+  children,
+}) {
   const user = getCurrentUser();
 
-  if (!canAccessPage(user?.role, pageKey)) {
-    return <Navigate to="/dashboard" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!canAccessPage(user.role, pageKey)) {
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+      />
+    );
   }
 
   return children;

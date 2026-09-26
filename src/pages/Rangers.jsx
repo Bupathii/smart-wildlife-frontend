@@ -1,7 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function Rangers() {
-  return <PlaceholderPage title="Rangers" description="Manage ranger accounts and assignments." />;
+export default function Rangers() {
+  return (
+    <PlaceholderPage
+      title="Rangers"
+      description="View ranger information, status and assignments."
+    />
+  );
 }
-
-export default Rangers;

@@ -1,7 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function Settings() {
-  return <PlaceholderPage title="Settings" description="Account and system settings." />;
+export default function Settings() {
+  return (
+    <PlaceholderPage
+      title="System Settings"
+      description="Configure general system and account settings."
+    />
+  );
 }
-
-export default Settings;

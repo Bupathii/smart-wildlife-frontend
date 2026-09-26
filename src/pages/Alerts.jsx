@@ -1,9 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function Alerts() {
+export default function Alerts() {
   return (
-    <PlaceholderPage title="Alerts" description="View and acknowledge high-risk zone alerts." />
+    <PlaceholderPage
+      title="Wildlife Risk Alerts"
+      description="View active and historical wildlife risk alerts."
+    />
   );
 }
-
-export default Alerts;

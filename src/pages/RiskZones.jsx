@@ -1,9 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function RiskZones() {
+export default function RiskZones() {
   return (
-    <PlaceholderPage title="Risk Zones" description="Configure high-risk zones such as farmland and roads." />
+    <PlaceholderPage
+      title="High-Risk Zones"
+      description="View and manage configured wildlife risk zones."
+    />
   );
 }
-
-export default RiskZones;

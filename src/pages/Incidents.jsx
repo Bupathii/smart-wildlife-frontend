@@ -1,9 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function Incidents() {
+export default function Incidents() {
   return (
-    <PlaceholderPage title="Incidents" description="Review wildlife and poaching incident reports." />
+    <PlaceholderPage
+      title="Wildlife & Poaching Incidents"
+      description="Review incidents reported by wildlife rangers."
+    />
   );
 }
-
-export default Incidents;
