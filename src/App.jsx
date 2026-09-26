@@ -1,99 +1,209 @@
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import RoleRoute from './components/RoleRoute';
+
 import DashboardLayout from './layouts/DashboardLayout';
+
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+
 import Dashboard from './pages/Dashboard';
 import Rangers from './pages/Rangers';
 import Patrols from './pages/Patrols';
 import PatrolRoutes from './pages/PatrolRoutes';
 import Incidents from './pages/Incidents';
+import ConflictReports from './pages/ConflictReports';
 import Animals from './pages/Animals';
 import RiskZones from './pages/RiskZones';
 import Alerts from './pages/Alerts';
+import CameraTraps from './pages/CameraTraps';
 import Reports from './pages/Reports';
+import Users from './pages/Users';
 import Settings from './pages/Settings';
+
+function RolePage({
+  pageKey,
+  children,
+}) {
+  return (
+    <RoleRoute pageKey={pageKey}>
+      {children}
+    </RoleRoute>
+  );
+}
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        {/* Public */}
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
+        />
+
+        <Route
+          path="/reset-password/:token"
+          element={<ResetPassword />}
+        />
+
+        {/* Protected */}
+
         <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            element={<DashboardLayout />}
+          >
+            <Route
+              path="/dashboard"
+              element={
+                <RolePage pageKey="dashboard">
+                  <Dashboard />
+                </RolePage>
+              }
+            />
+
             <Route
               path="/rangers"
               element={
-                <RoleRoute pageKey="rangers">
+                <RolePage pageKey="rangers">
                   <Rangers />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
             <Route
               path="/patrols"
               element={
-                <RoleRoute pageKey="patrols">
+                <RolePage pageKey="patrols">
                   <Patrols />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
             <Route
               path="/patrol-routes"
               element={
-                <RoleRoute pageKey="patrol-routes">
+                <RolePage pageKey="patrol-routes">
                   <PatrolRoutes />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
             <Route
               path="/incidents"
               element={
-                <RoleRoute pageKey="incidents">
+                <RolePage pageKey="incidents">
                   <Incidents />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
+            <Route
+              path="/conflicts"
+              element={
+                <RolePage pageKey="conflicts">
+                  <ConflictReports />
+                </RolePage>
+              }
+            />
+
             <Route
               path="/animals"
               element={
-                <RoleRoute pageKey="animals">
+                <RolePage pageKey="animals">
                   <Animals />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
             <Route
               path="/risk-zones"
               element={
-                <RoleRoute pageKey="risk-zones">
+                <RolePage pageKey="risk-zones">
                   <RiskZones />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
             <Route
               path="/alerts"
               element={
-                <RoleRoute pageKey="alerts">
+                <RolePage pageKey="alerts">
                   <Alerts />
-                </RoleRoute>
+                </RolePage>
               }
             />
+
+            <Route
+              path="/camera-traps"
+              element={
+                <RolePage pageKey="camera-traps">
+                  <CameraTraps />
+                </RolePage>
+              }
+            />
+
             <Route
               path="/reports"
               element={
-                <RoleRoute pageKey="reports">
+                <RolePage pageKey="reports">
                   <Reports />
-                </RoleRoute>
+                </RolePage>
               }
             />
-            <Route path="/settings" element={<Settings />} />
+
+            <Route
+              path="/users"
+              element={
+                <RolePage pageKey="users">
+                  <Users />
+                </RolePage>
+              }
+            />
+
+            <Route
+              path="/settings"
+              element={
+                <RolePage pageKey="settings">
+                  <Settings />
+                </RolePage>
+              }
+            />
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/login" replace />} />
+
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/login"
+              replace
+            />
+          }
+        />
       </Routes>
     </Router>
   );

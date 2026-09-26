@@ -1,12 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function Reports() {
+export default function Reports() {
   return (
     <PlaceholderPage
-      title="Reports"
-      description="Generate conservation reports: incident trends, poaching hotspots, patrol coverage, and human-wildlife conflict."
+      title="Reports & Analytics"
+      description="Analyse incidents, patrol coverage, conflict trends and conservation outcomes."
     />
   );
 }
-
-export default Reports;

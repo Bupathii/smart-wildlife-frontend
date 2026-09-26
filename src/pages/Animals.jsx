@@ -1,9 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function Animals() {
+export default function Animals() {
   return (
-    <PlaceholderPage title="Animals" description="Monitor GPS-tracked wildlife on the map." />
+    <PlaceholderPage
+      title="Tracked Animals"
+      description="View tracked wildlife and collar information."
+    />
   );
 }
-
-export default Animals;

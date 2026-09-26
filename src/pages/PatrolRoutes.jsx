@@ -1,12 +1,10 @@
 import PlaceholderPage from '../components/PlaceholderPage';
 
-function PatrolRoutes() {
+export default function PatrolRoutes() {
   return (
     <PlaceholderPage
       title="Patrol Routes"
-      description="Create and assign patrol routes to rangers."
+      description="Manage and review configured patrol routes."
     />
   );
 }
-
-export default PatrolRoutes;
