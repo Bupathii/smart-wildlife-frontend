@@ -19,12 +19,19 @@ import Rangers from './pages/Rangers';
 import Patrols from './pages/Patrols';
 import PatrolRoutes from './pages/PatrolRoutes';
 import Incidents from './pages/Incidents';
+
 import ConflictReports from './pages/ConflictReports';
+import ConflictReportDetails from './pages/ConflictReportDetails';
+import ArchivedConflictReports from './pages/ArchivedConflictReports';
+
 import Animals from './pages/Animals';
 import RiskZones from './pages/RiskZones';
 import Alerts from './pages/Alerts';
 import CameraTraps from './pages/CameraTraps';
+
 import Reports from './pages/Reports';
+import ConflictAnalytics from './pages/ConflictAnalytics';
+
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 
@@ -33,7 +40,11 @@ function RolePage({
   children,
 }) {
   return (
-    <RoleRoute pageKey={pageKey}>
+    <RoleRoute
+      pageKey={
+        pageKey
+      }
+    >
       {children}
     </RoleRoute>
   );
@@ -43,29 +54,47 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public */}
+
+        {/* =========================
+            PUBLIC
+        ========================== */}
 
         <Route
           path="/login"
-          element={<Login />}
+          element={
+            <Login />
+          }
         />
 
         <Route
           path="/forgot-password"
-          element={<ForgotPassword />}
+          element={
+            <ForgotPassword />
+          }
         />
 
         <Route
           path="/reset-password/:token"
-          element={<ResetPassword />}
+          element={
+            <ResetPassword />
+          }
         />
 
-        {/* Protected */}
+        {/* =========================
+            PROTECTED
+        ========================== */}
 
-        <Route element={<ProtectedRoute />}>
+        <Route
+          element={
+            <ProtectedRoute />
+          }
+        >
           <Route
-            element={<DashboardLayout />}
+            element={
+              <DashboardLayout />
+            }
           >
+
             <Route
               path="/dashboard"
               element={
@@ -111,6 +140,10 @@ function App() {
               }
             />
 
+            {/* =====================
+                CONFLICT REPORTS
+            ====================== */}
+
             <Route
               path="/conflicts"
               element={
@@ -119,6 +152,32 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/*
+             * Keep archived route
+             * separate and ADMIN only.
+             */}
+            <Route
+              path="/conflicts/archived"
+              element={
+                <RolePage pageKey="conflict-archive">
+                  <ArchivedConflictReports />
+                </RolePage>
+              }
+            />
+
+            <Route
+              path="/conflicts/:id"
+              element={
+                <RolePage pageKey="conflicts">
+                  <ConflictReportDetails />
+                </RolePage>
+              }
+            />
+
+            {/* =====================
+                OTHER MODULES
+            ====================== */}
 
             <Route
               path="/animals"
@@ -156,6 +215,10 @@ function App() {
               }
             />
 
+            {/* =====================
+                REPORTS
+            ====================== */}
+
             <Route
               path="/reports"
               element={
@@ -164,6 +227,19 @@ function App() {
                 </RolePage>
               }
             />
+
+            <Route
+              path="/reports/conflicts"
+              element={
+                <RolePage pageKey="reports">
+                  <ConflictAnalytics />
+                </RolePage>
+              }
+            />
+
+            {/* =====================
+                ADMIN
+            ====================== */}
 
             <Route
               path="/users"
@@ -182,8 +258,11 @@ function App() {
                 </RolePage>
               }
             />
+
           </Route>
         </Route>
+
+        {/* DEFAULT */}
 
         <Route
           path="/"
@@ -204,6 +283,7 @@ function App() {
             />
           }
         />
+
       </Routes>
     </Router>
   );
