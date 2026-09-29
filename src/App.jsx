@@ -19,7 +19,10 @@ import Rangers from './pages/Rangers';
 import Patrols from './pages/Patrols';
 import PatrolRoutes from './pages/PatrolRoutes';
 import Incidents from './pages/Incidents';
+
 import ConflictReports from './pages/ConflictReports';
+import ConflictReportDetails from './pages/ConflictReportDetails';
+
 import Animals from './pages/Animals';
 import RiskZones from './pages/RiskZones';
 import Alerts from './pages/Alerts';
@@ -43,7 +46,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public */}
+        {/* =========================
+            PUBLIC ROUTES
+        ========================== */}
 
         <Route
           path="/login"
@@ -52,20 +57,34 @@ function App() {
 
         <Route
           path="/forgot-password"
-          element={<ForgotPassword />}
+          element={
+            <ForgotPassword />
+          }
         />
 
         <Route
           path="/reset-password/:token"
-          element={<ResetPassword />}
+          element={
+            <ResetPassword />
+          }
         />
 
-        {/* Protected */}
+        {/* =========================
+            PROTECTED ROUTES
+        ========================== */}
 
-        <Route element={<ProtectedRoute />}>
+        <Route
+          element={
+            <ProtectedRoute />
+          }
+        >
           <Route
-            element={<DashboardLayout />}
+            element={
+              <DashboardLayout />
+            }
           >
+            {/* Dashboard */}
+
             <Route
               path="/dashboard"
               element={
@@ -74,6 +93,8 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/* Rangers */}
 
             <Route
               path="/rangers"
@@ -84,6 +105,8 @@ function App() {
               }
             />
 
+            {/* Patrols */}
+
             <Route
               path="/patrols"
               element={
@@ -92,6 +115,8 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/* Patrol Routes */}
 
             <Route
               path="/patrol-routes"
@@ -102,6 +127,8 @@ function App() {
               }
             />
 
+            {/* Incidents */}
+
             <Route
               path="/incidents"
               element={
@@ -110,6 +137,10 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/* =====================
+                CONFLICT REPORTS
+            ====================== */}
 
             <Route
               path="/conflicts"
@@ -121,6 +152,17 @@ function App() {
             />
 
             <Route
+              path="/conflicts/:id"
+              element={
+                <RolePage pageKey="conflicts">
+                  <ConflictReportDetails />
+                </RolePage>
+              }
+            />
+
+            {/* Animals */}
+
+            <Route
               path="/animals"
               element={
                 <RolePage pageKey="animals">
@@ -128,6 +170,8 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/* Risk Zones */}
 
             <Route
               path="/risk-zones"
@@ -138,6 +182,8 @@ function App() {
               }
             />
 
+            {/* Alerts */}
+
             <Route
               path="/alerts"
               element={
@@ -146,6 +192,8 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/* Camera Traps */}
 
             <Route
               path="/camera-traps"
@@ -156,6 +204,8 @@ function App() {
               }
             />
 
+            {/* Reports */}
+
             <Route
               path="/reports"
               element={
@@ -165,6 +215,8 @@ function App() {
               }
             />
 
+            {/* Users */}
+
             <Route
               path="/users"
               element={
@@ -173,6 +225,8 @@ function App() {
                 </RolePage>
               }
             />
+
+            {/* Settings */}
 
             <Route
               path="/settings"
@@ -184,6 +238,10 @@ function App() {
             />
           </Route>
         </Route>
+
+        {/* =========================
+            DEFAULT ROUTES
+        ========================== */}
 
         <Route
           path="/"
