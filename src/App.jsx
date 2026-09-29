@@ -22,6 +22,7 @@ import Incidents from './pages/Incidents';
 
 import ConflictReports from './pages/ConflictReports';
 import ConflictReportDetails from './pages/ConflictReportDetails';
+import ConflictAnalytics from './pages/ConflictAnalytics';
 
 import Animals from './pages/Animals';
 import RiskZones from './pages/RiskZones';
@@ -46,9 +47,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* =========================
-            PUBLIC ROUTES
-        ========================== */}
+        {/* PUBLIC */}
 
         <Route
           path="/login"
@@ -69,9 +68,7 @@ function App() {
           }
         />
 
-        {/* =========================
-            PROTECTED ROUTES
-        ========================== */}
+        {/* PROTECTED */}
 
         <Route
           element={
@@ -83,8 +80,6 @@ function App() {
               <DashboardLayout />
             }
           >
-            {/* Dashboard */}
-
             <Route
               path="/dashboard"
               element={
@@ -93,8 +88,6 @@ function App() {
                 </RolePage>
               }
             />
-
-            {/* Rangers */}
 
             <Route
               path="/rangers"
@@ -105,8 +98,6 @@ function App() {
               }
             />
 
-            {/* Patrols */}
-
             <Route
               path="/patrols"
               element={
@@ -115,8 +106,6 @@ function App() {
                 </RolePage>
               }
             />
-
-            {/* Patrol Routes */}
 
             <Route
               path="/patrol-routes"
@@ -127,8 +116,6 @@ function App() {
               }
             />
 
-            {/* Incidents */}
-
             <Route
               path="/incidents"
               element={
@@ -138,9 +125,7 @@ function App() {
               }
             />
 
-            {/* =====================
-                CONFLICT REPORTS
-            ====================== */}
+            {/* CONFLICTS */}
 
             <Route
               path="/conflicts"
@@ -160,7 +145,7 @@ function App() {
               }
             />
 
-            {/* Animals */}
+            {/* OTHER MODULES */}
 
             <Route
               path="/animals"
@@ -171,8 +156,6 @@ function App() {
               }
             />
 
-            {/* Risk Zones */}
-
             <Route
               path="/risk-zones"
               element={
@@ -181,8 +164,6 @@ function App() {
                 </RolePage>
               }
             />
-
-            {/* Alerts */}
 
             <Route
               path="/alerts"
@@ -193,8 +174,6 @@ function App() {
               }
             />
 
-            {/* Camera Traps */}
-
             <Route
               path="/camera-traps"
               element={
@@ -204,7 +183,7 @@ function App() {
               }
             />
 
-            {/* Reports */}
+            {/* REPORTS */}
 
             <Route
               path="/reports"
@@ -215,7 +194,16 @@ function App() {
               }
             />
 
-            {/* Users */}
+            <Route
+              path="/reports/conflicts"
+              element={
+                <RolePage pageKey="reports">
+                  <ConflictAnalytics />
+                </RolePage>
+              }
+            />
+
+            {/* ADMIN */}
 
             <Route
               path="/users"
@@ -225,8 +213,6 @@ function App() {
                 </RolePage>
               }
             />
-
-            {/* Settings */}
 
             <Route
               path="/settings"
@@ -238,10 +224,6 @@ function App() {
             />
           </Route>
         </Route>
-
-        {/* =========================
-            DEFAULT ROUTES
-        ========================== */}
 
         <Route
           path="/"
