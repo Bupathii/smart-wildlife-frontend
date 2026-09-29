@@ -19,6 +19,12 @@ export const ROLE_PAGES = {
     'patrol-routes',
     'incidents',
     'conflicts',
+
+    /*
+     * ADMIN ONLY
+     */
+    'conflict-archive',
+
     'animals',
     'risk-zones',
     'alerts',
@@ -69,29 +75,48 @@ export const ROLE_PAGES = {
     'alerts',
   ],
 
-  // Mobile application users
   RANGER: [],
+
   COMMUNITY_MEMBER: [],
 };
 
 export function getCurrentUser() {
   try {
     return JSON.parse(
-      localStorage.getItem('user') || 'null'
+      localStorage.getItem(
+        'user'
+      ) || 'null'
     );
   } catch {
     return null;
   }
 }
 
-export function canAccessPage(role, pageKey) {
-  return (ROLE_PAGES[role] || []).includes(pageKey);
+export function canAccessPage(
+  role,
+  pageKey
+) {
+  return (
+    ROLE_PAGES[
+      role
+    ] || []
+  ).includes(
+    pageKey
+  );
 }
 
-export function isWebRole(role) {
-  return WEB_ROLES.includes(role);
+export function isWebRole(
+  role
+) {
+  return WEB_ROLES.includes(
+    role
+  );
 }
 
-export function isMobileOnlyRole(role) {
-  return MOBILE_ONLY_ROLES.includes(role);
+export function isMobileOnlyRole(
+  role
+) {
+  return MOBILE_ONLY_ROLES.includes(
+    role
+  );
 }
