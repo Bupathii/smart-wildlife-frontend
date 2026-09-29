@@ -2,16 +2,16 @@ import apiClient from './client';
 
 /*
  * =====================================================
- * GET CONFLICT REPORTS
+ * ACTIVE CONFLICT REPORTS
  * =====================================================
  */
+
 export async function getConflictReports({
   page = 1,
   limit = 10,
   status = '',
   conflictType = '',
   urgency = '',
-  duplicate = '',
 } = {}) {
   const params = {
     page,
@@ -28,12 +28,8 @@ export async function getConflictReports({
   }
 
   if (urgency) {
-    params.urgency = urgency;
-  }
-
-  if (duplicate !== '') {
-    params.duplicate =
-      duplicate;
+    params.urgency =
+      urgency;
   }
 
   const { data } =
@@ -49,9 +45,10 @@ export async function getConflictReports({
 
 /*
  * =====================================================
- * GET ONE REPORT
+ * ONE ACTIVE CONFLICT REPORT
  * =====================================================
  */
+
 export async function getConflictReportById(
   reportId
 ) {
@@ -65,9 +62,10 @@ export async function getConflictReportById(
 
 /*
  * =====================================================
- * UPDATE RESPONSE
+ * RESPONSE UPDATE
  * =====================================================
  */
+
 export async function updateConflictResponse(
   reportId,
   payload
@@ -83,15 +81,125 @@ export async function updateConflictResponse(
 
 /*
  * =====================================================
- * LOAD REPORTS FOR ANALYTICS
- *
- * Loads multiple pages from the
- * existing conflict endpoint.
- *
- * No new analytics backend endpoint
- * is assumed.
+ * ADMIN - ARCHIVE
  * =====================================================
  */
+
+export async function archiveConflictReport(
+  reportId,
+  reason
+) {
+  const { data } =
+    await apiClient.patch(
+      `/conflicts/${reportId}/archive`,
+      {
+        reason,
+      }
+    );
+
+  return data;
+}
+
+/*
+ * =====================================================
+ * ADMIN - ARCHIVED REPORTS
+ * =====================================================
+ */
+
+export async function getArchivedConflictReports({
+  page = 1,
+  limit = 10,
+  status = '',
+  conflictType = '',
+  urgency = '',
+} = {}) {
+  const params = {
+    page,
+    limit,
+  };
+
+  if (status) {
+    params.status = status;
+  }
+
+  if (conflictType) {
+    params.conflictType =
+      conflictType;
+  }
+
+  if (urgency) {
+    params.urgency =
+      urgency;
+  }
+
+  const { data } =
+    await apiClient.get(
+      '/conflicts/admin/archived',
+      {
+        params,
+      }
+    );
+
+  return data;
+}
+
+/*
+ * =====================================================
+ * ADMIN - ACTIVE OR ARCHIVED REPORT
+ * =====================================================
+ */
+
+export async function getAdminConflictReportById(
+  reportId
+) {
+  const { data } =
+    await apiClient.get(
+      `/conflicts/admin/${reportId}`
+    );
+
+  return data;
+}
+
+/*
+ * =====================================================
+ * ADMIN - RESTORE
+ * =====================================================
+ */
+
+export async function restoreConflictReport(
+  reportId
+) {
+  const { data } =
+    await apiClient.patch(
+      `/conflicts/${reportId}/restore`
+    );
+
+  return data;
+}
+
+/*
+ * =====================================================
+ * ADMIN - PERMANENT DELETE
+ * =====================================================
+ */
+
+export async function permanentlyDeleteConflictReport(
+  reportId
+) {
+  const { data } =
+    await apiClient.delete(
+      `/conflicts/${reportId}/permanent`
+    );
+
+  return data;
+}
+
+/*
+ * =====================================================
+ * ANALYTICS
+ * =====================================================
+ */
+
 export async function getConflictAnalyticsReports() {
   const LIMIT = 50;
   const MAX_PAGES = 20;
@@ -135,8 +243,7 @@ export async function getConflictAnalyticsReports() {
   }
 
   return {
-    reports:
-      allReports,
+    reports: allReports,
 
     totalReports:
       firstResponse.pagination

@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  Archive,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
+  X,
 } from 'lucide-react';
 
 import {
@@ -23,8 +25,13 @@ import {
 } from 'react-router-dom';
 
 import {
+  archiveConflictReport,
   getConflictReports,
 } from '../api/conflicts';
+
+import {
+  getCurrentUser,
+} from '../config/roleAccess';
 
 const STATUS_OPTIONS = [
   {
@@ -105,9 +112,12 @@ function getConflictTypeLabel(
       return 'Other Conflict';
 
     default:
-      return type
-        ?.replaceAll('_', ' ') ||
-        'Unknown';
+      return (
+        type?.replaceAll(
+          '_',
+          ' '
+        ) || 'Unknown'
+      );
   }
 }
 
@@ -118,20 +128,20 @@ function getLocationLabel(
     report?.location?.source ===
     'GPS'
   ) {
-    const lat =
+    const latitude =
       report.location.latitude;
 
-    const lng =
+    const longitude =
       report.location.longitude;
 
     if (
-      lat !== undefined &&
-      lng !== undefined
+      latitude !== undefined &&
+      longitude !== undefined
     ) {
       return `${Number(
-        lat
+        latitude
       ).toFixed(5)}, ${Number(
-        lng
+        longitude
       ).toFixed(5)}`;
     }
 
@@ -160,6 +170,13 @@ function formatDate(
 export default function ConflictReports() {
   const navigate =
     useNavigate();
+
+  const currentUser =
+    getCurrentUser();
+
+  const isAdmin =
+    currentUser?.role ===
+    'ADMIN';
 
   const [
     reports,
@@ -211,6 +228,29 @@ export default function ConflictReports() {
     setSearch,
   ] = useState('');
 
+  /*
+   * Archive Modal
+   */
+  const [
+    archiveTarget,
+    setArchiveTarget,
+  ] = useState(null);
+
+  const [
+    archiveReason,
+    setArchiveReason,
+  ] = useState('');
+
+  const [
+    archiving,
+    setArchiving,
+  ] = useState(false);
+
+  const [
+    archiveError,
+    setArchiveError,
+  ] = useState('');
+
   const LIMIT = 10;
 
   async function loadReports() {
@@ -239,19 +279,19 @@ export default function ConflictReports() {
       setTotalReports(
         result.pagination
           ?.totalReports ??
-          result.count ??
-          result.reports?.length ??
+          result.reports
+            ?.length ??
           0
       );
     } catch (err) {
+      setReports([]);
+
       setError(
         err.response?.data
           ?.message ||
           err.message ||
           'Unable to load conflict reports.'
       );
-
-      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -266,10 +306,6 @@ export default function ConflictReports() {
     urgency,
   ]);
 
-  /*
-   * Reset pagination whenever
-   * filters change.
-   */
   useEffect(() => {
     setPage(1);
   }, [
@@ -278,13 +314,6 @@ export default function ConflictReports() {
     urgency,
   ]);
 
-  /*
-   * Search is done on currently
-   * loaded page.
-   *
-   * No backend search endpoint is
-   * assumed.
-   */
   const visibleReports =
     useMemo(() => {
       const query =
@@ -352,13 +381,90 @@ export default function ConflictReports() {
     setPage(1);
   }
 
+  function openArchiveModal(
+    report
+  ) {
+    setArchiveTarget(
+      report
+    );
+
+    setArchiveReason('');
+
+    setArchiveError('');
+  }
+
+  function closeArchiveModal() {
+    if (archiving) {
+      return;
+    }
+
+    setArchiveTarget(
+      null
+    );
+
+    setArchiveReason('');
+
+    setArchiveError('');
+  }
+
+  async function handleArchive() {
+    const reason =
+      archiveReason.trim();
+
+    if (
+      reason.length < 3
+    ) {
+      setArchiveError(
+        'Please provide a valid reason for archiving this report.'
+      );
+
+      return;
+    }
+
+    try {
+      setArchiving(true);
+
+      setArchiveError('');
+
+      await archiveConflictReport(
+        archiveTarget._id,
+        reason
+      );
+
+      closeArchiveModal();
+
+      /*
+       * If last record on current
+       * page was archived,
+       * move to previous page.
+       */
+      if (
+        reports.length === 1 &&
+        page > 1
+      ) {
+        setPage(
+          page - 1
+        );
+      } else {
+        await loadReports();
+      }
+    } catch (err) {
+      setArchiveError(
+        err.response?.data
+          ?.message ||
+          err.message ||
+          'Unable to archive the report.'
+      );
+    } finally {
+      setArchiving(false);
+    }
+  }
+
   return (
     <main className="min-h-full bg-slate-50">
-      <div className="mx-auto max-w-[1600px] p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-[1600px]">
 
-        {/* =========================
-            HEADER
-        ========================== */}
+        {/* HEADER */}
 
         <section className="mb-6 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
           <div>
@@ -375,55 +481,74 @@ export default function ConflictReports() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-              Review conflict reports
-              submitted by community
-              members and monitor their
-              response status.
+              Review community
+              conflict reports and
+              monitor operational
+              responses.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={
-              loadReports
-            }
-            disabled={
-              loading
-            }
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCw
-              size={17}
-              className={
-                loading
-                  ? 'animate-spin'
-                  : ''
-              }
-            />
+          <div className="flex flex-wrap gap-3">
 
-            Refresh
-          </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    '/conflicts/archived'
+                  )
+                }
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-800 transition hover:bg-amber-100"
+              >
+                <Archive
+                  size={17}
+                />
+
+                Archived Reports
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={
+                loadReports
+              }
+              disabled={
+                loading
+              }
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              <RefreshCw
+                size={17}
+                className={
+                  loading
+                    ? 'animate-spin'
+                    : ''
+                }
+              />
+
+              Refresh
+            </button>
+          </div>
         </section>
 
-        {/* =========================
-            SUMMARY CARDS
-        ========================== */}
+        {/* SUMMARY */}
 
         <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
-            label="Total Reports"
+            label="Active Reports"
             value={
               totalReports
             }
-            description="Available conflict records"
+            description="Operational records"
           />
 
           <SummaryCard
-            label="Current Page"
+            label="Loaded"
             value={
               reports.length
             }
-            description="Reports loaded"
+            description="Current page"
           />
 
           <SummaryCard
@@ -447,13 +572,11 @@ export default function ConflictReports() {
                   'RESOLVED'
               ).length
             }
-            description="Resolved on this page"
+            description="Current page"
           />
         </section>
 
-        {/* =========================
-            FILTERS
-        ========================== */}
+        {/* FILTERS */}
 
         <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
           <div className="mb-4 flex items-center gap-2">
@@ -468,8 +591,6 @@ export default function ConflictReports() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-
-            {/* Search */}
 
             <div className="relative">
               <Search
@@ -490,11 +611,9 @@ export default function ConflictReports() {
                   )
                 }
                 placeholder="Search reports..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none focus:border-emerald-500 focus:bg-white"
               />
             </div>
-
-            {/* Status */}
 
             <select
               value={
@@ -508,7 +627,7 @@ export default function ConflictReports() {
                     .value
                 )
               }
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-emerald-500"
             >
               {STATUS_OPTIONS.map(
                 (option) => (
@@ -528,8 +647,6 @@ export default function ConflictReports() {
               )}
             </select>
 
-            {/* Conflict Type */}
-
             <select
               value={
                 conflictType
@@ -542,7 +659,7 @@ export default function ConflictReports() {
                     .value
                 )
               }
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-emerald-500"
             >
               {TYPE_OPTIONS.map(
                 (option) => (
@@ -562,8 +679,6 @@ export default function ConflictReports() {
               )}
             </select>
 
-            {/* Urgency */}
-
             <select
               value={
                 urgency
@@ -576,7 +691,7 @@ export default function ConflictReports() {
                     .value
                 )
               }
-              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+              className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-emerald-500"
             >
               {URGENCY_OPTIONS.map(
                 (option) => (
@@ -606,88 +721,62 @@ export default function ConflictReports() {
               onClick={
                 clearFilters
               }
-              className="mt-4 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+              className="mt-4 text-sm font-semibold text-emerald-700"
             >
               Clear all filters
             </button>
           )}
         </section>
 
-        {/* =========================
-            ERROR
-        ========================== */}
-
         {error && (
-          <section className="mb-6 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
             <AlertCircle
-              size={21}
-              className="mt-0.5 shrink-0 text-red-600"
+              size={20}
+              className="mt-0.5 text-red-600"
             />
 
-            <div>
-              <p className="font-semibold text-red-800">
-                Unable to load conflict reports
-              </p>
-
-              <p className="mt-1 text-sm text-red-600">
-                {error}
-              </p>
-            </div>
-          </section>
+            <p className="text-sm text-red-700">
+              {error}
+            </p>
+          </div>
         )}
 
-        {/* =========================
-            CONTENT
-        ========================== */}
+        {/* TABLE */}
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-          {/* Loading */}
 
           {loading && (
             <div className="flex min-h-[420px] flex-col items-center justify-center">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-600" />
 
-              <p className="mt-4 text-sm font-medium text-slate-500">
-                Loading conflict
-                reports...
+              <p className="mt-4 text-sm text-slate-500">
+                Loading reports...
               </p>
             </div>
           )}
-
-          {/* Empty */}
 
           {!loading &&
             !error &&
             visibleReports
               .length === 0 && (
-              <div className="flex min-h-[420px] flex-col items-center justify-center px-6 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                  <ShieldAlert
-                    size={27}
-                  />
-                </div>
+              <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
+                <ShieldAlert
+                  size={35}
+                  className="text-slate-400"
+                />
 
-                <h3 className="mt-4 text-lg font-bold text-slate-800">
+                <h3 className="mt-4 font-bold text-slate-800">
                   No conflict reports found
                 </h3>
-
-                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  No reports match
-                  the selected
-                  filters.
-                </p>
               </div>
             )}
-
-          {/* Desktop Table */}
 
           {!loading &&
             visibleReports
               .length > 0 && (
               <>
                 <div className="hidden overflow-x-auto lg:block">
-                  <table className="w-full min-w-[1050px]">
+                  <table className="w-full min-w-[1150px]">
                     <thead className="border-b border-slate-200 bg-slate-50">
                       <tr className="text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                         <th className="px-5 py-4">
@@ -714,7 +803,9 @@ export default function ConflictReports() {
                           Reported
                         </th>
 
-                        <th className="w-16 px-5 py-4" />
+                        <th className="px-5 py-4">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
 
@@ -727,12 +818,7 @@ export default function ConflictReports() {
                             key={
                               report._id
                             }
-                            onClick={() =>
-                              navigate(
-                                `/conflicts/${report._id}`
-                              )
-                            }
-                            className="cursor-pointer transition hover:bg-emerald-50/40"
+                            className="transition hover:bg-emerald-50/40"
                           >
                             <td className="px-5 py-4">
                               <div className="max-w-xs">
@@ -751,22 +837,22 @@ export default function ConflictReports() {
                                 {report
                                   .duplicateInfo
                                   ?.isPotentialDuplicate && (
-                                  <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">
+                                  <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">
                                     <Link2
                                       size={11}
                                     />
 
                                     Potential Duplicate
-                                  </div>
+                                  </span>
                                 )}
                               </div>
                             </td>
 
                             <td className="px-5 py-4">
-                              <div className="flex max-w-[210px] items-start gap-2 text-sm text-slate-600">
+                              <div className="flex max-w-[200px] gap-2 text-sm text-slate-600">
                                 <MapPin
                                   size={16}
-                                  className="mt-0.5 shrink-0 text-slate-400"
+                                  className="mt-0.5 shrink-0"
                                 />
 
                                 <span className="line-clamp-2">
@@ -797,7 +883,6 @@ export default function ConflictReports() {
                               <div className="flex items-center gap-2 text-sm text-slate-600">
                                 <ImageIcon
                                   size={16}
-                                  className="text-violet-500"
                                 />
 
                                 {
@@ -809,24 +894,45 @@ export default function ConflictReports() {
                               </div>
                             </td>
 
-                            <td className="px-5 py-4">
-                              <div className="flex max-w-[180px] items-start gap-2 text-xs text-slate-500">
-                                <Clock3
-                                  size={15}
-                                  className="mt-0.5 shrink-0"
-                                />
-
-                                {formatDate(
-                                  report.createdAt
-                                )}
-                              </div>
+                            <td className="px-5 py-4 text-xs text-slate-500">
+                              {formatDate(
+                                report.createdAt
+                              )}
                             </td>
 
                             <td className="px-5 py-4">
-                              <ChevronRight
-                                size={19}
-                                className="text-slate-400"
-                              />
+                              <div className="flex items-center gap-2">
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    navigate(
+                                      `/conflicts/${report._id}`
+                                    )
+                                  }
+                                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                                >
+                                  View
+                                </button>
+
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openArchiveModal(
+                                        report
+                                      )
+                                    }
+                                    className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-100"
+                                  >
+                                    <Archive
+                                      size={14}
+                                    />
+
+                                    Archive
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         )
@@ -835,24 +941,18 @@ export default function ConflictReports() {
                   </table>
                 </div>
 
-                {/* Mobile / Tablet Cards */}
+                {/* MOBILE */}
 
                 <div className="grid gap-3 p-4 lg:hidden">
                   {visibleReports.map(
                     (
                       report
                     ) => (
-                      <button
-                        type="button"
+                      <div
                         key={
                           report._id
                         }
-                        onClick={() =>
-                          navigate(
-                            `/conflicts/${report._id}`
-                          )
-                        }
-                        className="rounded-2xl border border-slate-200 p-4 text-left transition hover:border-emerald-300 hover:bg-emerald-50/40"
+                        className="rounded-2xl border border-slate-200 p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -876,23 +976,17 @@ export default function ConflictReports() {
                               />
                             </div>
                           </div>
-
-                          <ChevronRight
-                            size={20}
-                            className="shrink-0 text-slate-400"
-                          />
                         </div>
 
-                        <p className="mt-3 line-clamp-2 text-sm leading-5 text-slate-500">
+                        <p className="mt-3 line-clamp-2 text-sm text-slate-500">
                           {
                             report.description
                           }
                         </p>
 
-                        <div className="mt-4 flex items-start gap-2 text-xs text-slate-500">
+                        <div className="mt-3 flex gap-2 text-xs text-slate-500">
                           <MapPin
                             size={15}
-                            className="mt-0.5 shrink-0"
                           />
 
                           {getLocationLabel(
@@ -900,62 +994,60 @@ export default function ConflictReports() {
                           )}
                         </div>
 
-                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                          <Clock3
-                            size={15}
-                          />
+                        <div className="mt-4 flex gap-2">
+                          <button
+                            onClick={() =>
+                              navigate(
+                                `/conflicts/${report._id}`
+                              )
+                            }
+                            className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700"
+                          >
+                            View Details
+                          </button>
 
-                          {formatDate(
-                            report.createdAt
+                          {isAdmin && (
+                            <button
+                              onClick={() =>
+                                openArchiveModal(
+                                  report
+                                )
+                              }
+                              className="flex-1 rounded-xl bg-amber-100 px-3 py-2.5 text-xs font-bold text-amber-800"
+                            >
+                              Archive
+                            </button>
                           )}
                         </div>
-                      </button>
+                      </div>
                     )
                   )}
                 </div>
               </>
             )}
 
-          {/* =========================
-              PAGINATION
-          ========================== */}
+          {/* PAGINATION */}
 
           {!loading &&
             !error &&
             totalPages > 0 && (
-              <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-4">
                 <p className="text-xs text-slate-500">
-                  Page{' '}
-                  <strong className="text-slate-700">
-                    {page}
-                  </strong>{' '}
-                  of{' '}
-                  <strong className="text-slate-700">
-                    {
-                      totalPages
-                    }
-                  </strong>
+                  Page {page} of{' '}
+                  {totalPages}
                 </p>
 
-                <div className="flex items-center gap-2">
+                <div className="flex gap-2">
                   <button
-                    type="button"
                     disabled={
                       page <= 1
                     }
                     onClick={() =>
                       setPage(
-                        (
-                          current
-                        ) =>
-                          Math.max(
-                            1,
-                            current -
-                              1
-                          )
+                        page - 1
                       )
                     }
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold disabled:opacity-40"
                   >
                     <ChevronLeft
                       size={15}
@@ -965,24 +1057,16 @@ export default function ConflictReports() {
                   </button>
 
                   <button
-                    type="button"
                     disabled={
                       page >=
                       totalPages
                     }
                     onClick={() =>
                       setPage(
-                        (
-                          current
-                        ) =>
-                          Math.min(
-                            totalPages,
-                            current +
-                              1
-                          )
+                        page + 1
                       )
                     }
-                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold disabled:opacity-40"
                   >
                     Next
 
@@ -995,15 +1079,147 @@ export default function ConflictReports() {
             )}
         </section>
       </div>
+
+      {/* =============================================
+          ARCHIVE MODAL
+      ============================================== */}
+
+      {archiveTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">
+                  Archive Conflict Report
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  The report will be
+                  removed from normal
+                  operational views.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  archiving
+                }
+                onClick={
+                  closeArchiveModal
+                }
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
+              >
+                <X
+                  size={20}
+                />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="rounded-2xl bg-amber-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-600">
+                  Report
+                </p>
+
+                <p className="mt-1 font-bold text-amber-900">
+                  {getConflictTypeLabel(
+                    archiveTarget.conflictType
+                  )}
+                </p>
+
+                <p className="mt-2 line-clamp-2 text-sm text-amber-800">
+                  {
+                    archiveTarget.description
+                  }
+                </p>
+              </div>
+
+              <div className="mt-5">
+                <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Archive Reason
+                </label>
+
+                <textarea
+                  value={
+                    archiveReason
+                  }
+                  onChange={(
+                    event
+                  ) => {
+                    setArchiveReason(
+                      event.target
+                        .value
+                    );
+
+                    setArchiveError(
+                      ''
+                    );
+                  }}
+                  maxLength={300}
+                  rows={4}
+                  placeholder="Example: Invalid test report"
+                  className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-amber-500 focus:bg-white"
+                />
+
+                <div className="mt-1 text-right text-[11px] text-slate-400">
+                  {
+                    archiveReason.length
+                  }
+                  /300
+                </div>
+              </div>
+
+              {archiveError && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {
+                    archiveError
+                  }
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={
+                    archiving
+                  }
+                  onClick={
+                    closeArchiveModal
+                  }
+                  className="h-11 rounded-xl border border-slate-200 px-5 text-sm font-bold text-slate-600"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    archiving
+                  }
+                  onClick={
+                    handleArchive
+                  }
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-amber-600 px-5 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                >
+                  <Archive
+                    size={17}
+                  />
+
+                  {archiving
+                    ? 'Archiving...'
+                    : 'Archive Report'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-/*
- * =====================================================
- * SUMMARY CARD
- * =====================================================
- */
 function SummaryCard({
   label,
   value,
@@ -1026,92 +1242,65 @@ function SummaryCard({
   );
 }
 
-/*
- * =====================================================
- * STATUS BADGE
- * =====================================================
- */
 function StatusBadge({
   status,
 }) {
-  const config = {
-    SUBMITTED: {
-      label: 'Submitted',
-      className:
-        'bg-blue-50 text-blue-700 ring-blue-200',
-    },
+  const styles = {
+    SUBMITTED:
+      'bg-blue-50 text-blue-700',
 
-    UNDER_REVIEW: {
-      label: 'Under Review',
-      className:
-        'bg-amber-50 text-amber-700 ring-amber-200',
-    },
+    UNDER_REVIEW:
+      'bg-amber-50 text-amber-700',
 
-    RESPONDING: {
-      label: 'Responding',
-      className:
-        'bg-violet-50 text-violet-700 ring-violet-200',
-    },
+    RESPONDING:
+      'bg-violet-50 text-violet-700',
 
-    RESOLVED: {
-      label: 'Resolved',
-      className:
-        'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    },
+    RESOLVED:
+      'bg-emerald-50 text-emerald-700',
   };
-
-  const selected =
-    config[status] ||
-    config.SUBMITTED;
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ring-inset ${selected.className}`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${
+        styles[status] ||
+        styles.SUBMITTED
+      }`}
     >
-      {selected.label}
+      {status
+        ?.replaceAll(
+          '_',
+          ' '
+        ) || 'SUBMITTED'}
     </span>
   );
 }
 
-/*
- * =====================================================
- * URGENCY BADGE
- * =====================================================
- */
 function UrgencyBadge({
   urgency,
 }) {
-  const config = {
-    LOW: {
-      className:
-        'bg-slate-100 text-slate-600',
-    },
+  const styles = {
+    LOW:
+      'bg-slate-100 text-slate-600',
 
-    MEDIUM: {
-      className:
-        'bg-blue-50 text-blue-700',
-    },
+    MEDIUM:
+      'bg-blue-50 text-blue-700',
 
-    HIGH: {
-      className:
-        'bg-orange-50 text-orange-700',
-    },
+    HIGH:
+      'bg-orange-50 text-orange-700',
 
-    CRITICAL: {
-      className:
-        'bg-red-50 text-red-700',
-    },
+    CRITICAL:
+      'bg-red-50 text-red-700',
   };
-
-  const selected =
-    config[urgency] ||
-    config.MEDIUM;
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${selected.className}`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${
+        styles[urgency] ||
+        styles.MEDIUM
+      }`}
     >
-      {urgency || 'MEDIUM'}
+      {urgency ||
+        'MEDIUM'}
     </span>
   );
 }

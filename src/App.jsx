@@ -22,13 +22,16 @@ import Incidents from './pages/Incidents';
 
 import ConflictReports from './pages/ConflictReports';
 import ConflictReportDetails from './pages/ConflictReportDetails';
-import ConflictAnalytics from './pages/ConflictAnalytics';
+import ArchivedConflictReports from './pages/ArchivedConflictReports';
 
 import Animals from './pages/Animals';
 import RiskZones from './pages/RiskZones';
 import Alerts from './pages/Alerts';
 import CameraTraps from './pages/CameraTraps';
+
 import Reports from './pages/Reports';
+import ConflictAnalytics from './pages/ConflictAnalytics';
+
 import Users from './pages/Users';
 import Settings from './pages/Settings';
 
@@ -37,7 +40,11 @@ function RolePage({
   children,
 }) {
   return (
-    <RoleRoute pageKey={pageKey}>
+    <RoleRoute
+      pageKey={
+        pageKey
+      }
+    >
       {children}
     </RoleRoute>
   );
@@ -47,11 +54,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* PUBLIC */}
+
+        {/* =========================
+            PUBLIC
+        ========================== */}
 
         <Route
           path="/login"
-          element={<Login />}
+          element={
+            <Login />
+          }
         />
 
         <Route
@@ -68,7 +80,9 @@ function App() {
           }
         />
 
-        {/* PROTECTED */}
+        {/* =========================
+            PROTECTED
+        ========================== */}
 
         <Route
           element={
@@ -80,6 +94,7 @@ function App() {
               <DashboardLayout />
             }
           >
+
             <Route
               path="/dashboard"
               element={
@@ -125,13 +140,28 @@ function App() {
               }
             />
 
-            {/* CONFLICTS */}
+            {/* =====================
+                CONFLICT REPORTS
+            ====================== */}
 
             <Route
               path="/conflicts"
               element={
                 <RolePage pageKey="conflicts">
                   <ConflictReports />
+                </RolePage>
+              }
+            />
+
+            {/*
+             * Keep archived route
+             * separate and ADMIN only.
+             */}
+            <Route
+              path="/conflicts/archived"
+              element={
+                <RolePage pageKey="conflict-archive">
+                  <ArchivedConflictReports />
                 </RolePage>
               }
             />
@@ -145,7 +175,9 @@ function App() {
               }
             />
 
-            {/* OTHER MODULES */}
+            {/* =====================
+                OTHER MODULES
+            ====================== */}
 
             <Route
               path="/animals"
@@ -183,7 +215,9 @@ function App() {
               }
             />
 
-            {/* REPORTS */}
+            {/* =====================
+                REPORTS
+            ====================== */}
 
             <Route
               path="/reports"
@@ -203,7 +237,9 @@ function App() {
               }
             />
 
-            {/* ADMIN */}
+            {/* =====================
+                ADMIN
+            ====================== */}
 
             <Route
               path="/users"
@@ -222,8 +258,11 @@ function App() {
                 </RolePage>
               }
             />
+
           </Route>
         </Route>
+
+        {/* DEFAULT */}
 
         <Route
           path="/"
@@ -244,6 +283,7 @@ function App() {
             />
           }
         />
+
       </Routes>
     </Router>
   );
