@@ -1,34 +1,61 @@
-# Frontend — Wildlife Conservation Web App
+# Frontend — Smart Wildlife Conservation Web Dashboard
 
-React + Vite web application for Park Managers and Researchers.
+React + Vite web app for the office-side roles: Admin, Park Manager, Ranger Supervisor, Researcher, Community Liaison Officer. Rangers and Community Members use the [mobile app](../../mobile/smart-wildlife-mobile) instead — see role split below.
 
 ## Setup
 
 ```bash
-cd frontend
 npm install
 cp .env.example .env   # then edit VITE_API_BASE_URL if needed
 npm run dev            # http://localhost:5173
 ```
 
+Requires the [backend](../../backend/smart-wildlife-backend) running (default `http://localhost:5000/api`).
+
 ## Stack
 
-- React + React Router
+- React 19 + React Router 6
 - Axios (API client in `src/api/client.js`)
 - Tailwind CSS
-- Recharts (charts)
+- Recharts (charts) — used in `ConflictAnalytics`
 - Leaflet / React-Leaflet (maps)
+- Auth/session stored in `localStorage` (`token`, `user`) — see `src/components/ProtectedRoute.jsx`
+
+## Roles & access control
+
+Role → allowed page keys is defined centrally in `src/config/roleAccess.js` (`ROLE_PAGES`), and must stay in sync with the backend's `src/constants/roles.js`.
+
+| Role | Access |
+|---|---|
+| `ADMIN` | Everything, including `/conflicts/archived` and `/users` |
+| `PARK_MANAGER` | Everything except archive/users |
+| `RANGER_SUPERVISOR` | Dashboard, rangers, patrols, patrol-routes, incidents, conflicts, alerts, reports |
+| `RESEARCHER` | Dashboard, incidents, conflicts, animals, camera-traps, reports |
+| `COMMUNITY_LIAISON_OFFICER` | Dashboard, conflicts, alerts |
+| `RANGER`, `COMMUNITY_MEMBER` | Mobile-only — `isMobileOnlyRole()` returns true, no web pages |
+
+Route-level gating is done per-page via `<RoleRoute pageKey="...">` wrapping each route in `App.jsx`; `ProtectedRoute` handles the "must be logged in" check first.
 
 ## Structure
 
 ```
 src/
-  api/        # Axios client
-  components/ # Reusable UI components
-  layouts/    # Page layouts (e.g. dashboard sidebar)
-  pages/      # Route-level pages
-  App.jsx     # Routes
+  api/          # client.js (Axios instance + token header), conflicts.js (conflict-report calls)
+  components/   # GlassField, GlassButton (login form), ProtectedRoute, RoleRoute, PlaceholderPage
+  config/       # roleAccess.js — role → page-key matrix
+  layouts/      # AuthLayout (glass login shell), DashboardLayout (sidebar nav, filtered by role)
+  pages/        # Route-level pages (see status below)
+  App.jsx       # All routes, grouped: public / protected+role-gated / default redirects
 ```
 
-Pages are currently placeholders; each module (auth, patrols, incidents, animals, alerts,
-reports) will be implemented incrementally in later phases.
+## Page status
+
+Fully implemented:
+- `Login`, `ForgotPassword`, `ResetPassword` — real auth flow against `/api/auth`
+- `Dashboard` — summary cards (currently static placeholders, no live data wired yet)
+- `ConflictReports`, `ConflictReportDetails`, `ArchivedConflictReports`, `ConflictAnalytics`, `Reports` — the conflict-report module, backed end-to-end by the API
+
+Not yet implemented (render via `PlaceholderPage`, no backing API):
+- `Rangers`, `Patrols`, `PatrolRoutes`, `Incidents`, `Animals`, `RiskZones`, `Alerts`, `CameraTraps`, `Users`, `Settings`
+
+When implementing one of these, the backend route/controller/model for it doesn't exist yet either — check the [backend README](../../backend/smart-wildlife-backend/README.md) status section first.
