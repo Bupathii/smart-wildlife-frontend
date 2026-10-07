@@ -75,3 +75,33 @@ export function readApiError(error) {
     fields: serverError?.fields || {},
   };
 }
+
+/* ----------------------------- Patrol routes ----------------------------- */
+
+/** Routes of a park, each with how many patrols use it. */
+export async function getRoutes(parkId) {
+  const { data } = await apiClient.get(`/parks/${encodeURIComponent(parkId)}/routes`);
+  return data.routes;
+}
+
+/** Creates a route from { name, description, waypoints }. */
+export async function createRoute(parkId, route) {
+  const { data } = await apiClient.post(`/parks/${encodeURIComponent(parkId)}/routes`, route);
+  return data;
+}
+
+/** Replaces the name, description and waypoints of a route. */
+export async function updateRoute(parkId, routeId, route) {
+  const { data } = await apiClient.put(
+    `/parks/${encodeURIComponent(parkId)}/routes/${encodeURIComponent(routeId)}`,
+    route
+  );
+  return data;
+}
+
+/** Deletes a route that no patrol uses. */
+export async function deleteRoute(parkId, routeId) {
+  await apiClient.delete(
+    `/parks/${encodeURIComponent(parkId)}/routes/${encodeURIComponent(routeId)}`
+  );
+}
