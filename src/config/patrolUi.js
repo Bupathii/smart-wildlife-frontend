@@ -117,3 +117,19 @@ export function pathLengthKm(points) {
   }
   return Math.round(total * 100) / 100;
 }
+
+/* --------------------------- Patrol assignment --------------------------- */
+
+/** A ranger on a patrol with one of these statuses cannot be assigned again. */
+export const OPEN_PATROL_STATUSES = ['PLANNED', 'ACTIVE', 'DELAYED', 'ON_HOLD'];
+
+export const PATROL_DEFAULT_DURATION_HOURS = 4;
+
+/** A Date as the local "yyyy-MM-ddTHH:mm" text a datetime-local input needs. */
+export function toDateTimeInput(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
+}

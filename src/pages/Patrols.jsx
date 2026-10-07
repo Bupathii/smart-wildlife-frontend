@@ -1,14 +1,16 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 
-import { Activity, Filter, History } from 'lucide-react';
+import { Activity, CalendarPlus, Filter, History } from 'lucide-react';
 
 import PatrolDetails from './PatrolDetails';
 import PatrolFilter from './PatrolFilter';
 import PatrolHistory from './PatrolHistory';
 import PatrolMonitoring from './PatrolMonitoring';
+import PatrolPlanning from './PatrolPlanning';
 
 const TABS = [
   { to: '/patrols', label: 'Monitoring', icon: Activity, end: true },
+  { to: '/patrols/plan', label: 'Plan Patrols', icon: CalendarPlus },
   { to: '/patrols/filter', label: 'Filter Patrols', icon: Filter },
   { to: '/patrols/completed', label: 'Completed Patrols', icon: History },
 ];
@@ -50,6 +52,7 @@ export default function Patrols() {
 
       <Routes>
         <Route index element={<PatrolMonitoring />} />
+        <Route path="plan" element={<PatrolPlanning />} />
         <Route path="filter" element={<PatrolFilter />} />
         <Route path="completed" element={<PatrolHistory />} />
         <Route path=":patrolId" element={<PatrolDetails />} />
