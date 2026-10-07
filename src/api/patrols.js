@@ -105,3 +105,23 @@ export async function deleteRoute(parkId, routeId) {
     `/parks/${encodeURIComponent(parkId)}/routes/${encodeURIComponent(routeId)}`
   );
 }
+
+/* --------------------------- Patrol assignment --------------------------- */
+
+/** Assigns rangers to a route: { routeId, rangerIds, startTime, endTime }. */
+export async function createPatrol(plan) {
+  const { data } = await apiClient.post('/patrols', plan);
+  return data;
+}
+
+/** Changes a patrol that has not started yet. */
+export async function updatePatrol(patrolId, plan) {
+  const { data } = await apiClient.put(`/patrols/${encodeURIComponent(patrolId)}`, plan);
+  return data;
+}
+
+/** Cancels a patrol that has not started yet. */
+export async function cancelPatrol(patrolId) {
+  const { data } = await apiClient.post(`/patrols/${encodeURIComponent(patrolId)}/cancel`);
+  return data;
+}
