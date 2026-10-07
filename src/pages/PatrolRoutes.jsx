@@ -128,7 +128,7 @@ function WaypointList({ draft, onChange }) {
     onChange({ ...draft, waypoints: draft.waypoints.filter((_, position) => position !== index) });
 
   if (draft.waypoints.length === 0) {
-    return <p className="text-sm text-slate-500">Click on the map to add the first waypoint.</p>;
+    return <p className="text-sm text-slate-500">Click on the map to add the first waypoint. You can drag waypoints afterwards to adjust them.</p>;
   }
   return (
     <ol className="max-h-44 space-y-1 overflow-y-auto">
@@ -328,6 +328,13 @@ export default function PatrolRoutes() {
   const editingWaypoints = draft && !draft.locked;
   const addWaypoint = (point) =>
     setDraft((current) => ({ ...current, waypoints: [...current.waypoints, point] }));
+  const moveWaypoint = (index, point) =>
+    setDraft((current) => ({
+      ...current,
+      waypoints: current.waypoints.map((waypoint, position) =>
+        position === index ? point : waypoint
+      ),
+    }));
 
   return (
     <div className="space-y-5">
@@ -405,18 +412,20 @@ export default function PatrolRoutes() {
         </div>
 
         <Card
-          title={editingWaypoints ? 'Click on the map to add waypoints in order' : 'Route map'}
+          title={editingWaypoints ? 'Click the map to add a waypoint · drag a waypoint to move it' : 'Route map'}
           className="xl:col-span-3"
         >
           <RouteEditorMap
             zones={zones}
             routes={allRoutes.filter((route) => route.routeId !== (draft?.routeId ?? selectedId))}
             waypoints={draft ? draft.waypoints : (selected?.waypoints ?? [])}
+            focusKey={draft ? `edit-${draft.routeId ?? 'new'}` : selectedId}
             onAddWaypoint={editingWaypoints ? addWaypoint : undefined}
+            onMoveWaypoint={editingWaypoints ? moveWaypoint : undefined}
           />
           <p className="mt-3 text-xs text-slate-500">
             {draft
-              ? 'Waypoints must be inside the outlined park zones. Other routes are shown in grey.'
+              ? 'Drag a numbered waypoint to adjust it, or click the map to add one at the end. Waypoints must stay inside the outlined park zones. Other routes are shown in grey.'
               : 'Select a route to see its waypoints. Other routes are shown in grey.'}
           </p>
         </Card>
