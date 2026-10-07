@@ -84,3 +84,36 @@ export function dayBoundary(dateText, endOfDay = false) {
   const time = endOfDay ? 'T23:59:59.999' : 'T00:00:00.000';
   return new Date(`${dateText}${time}`).toISOString();
 }
+
+/* ----------------------------- Patrol routes ----------------------------- */
+
+export const ROUTE_MIN_WAYPOINTS = 2;
+export const ROUTE_NAME_MAX_LENGTH = 80;
+export const ROUTE_DESCRIPTION_MAX_LENGTH = 300;
+
+/** Roles that may create, edit and delete patrol routes. */
+export const ROUTE_MANAGER_ROLES = ['PARK_MANAGER', 'ADMIN'];
+
+const EARTH_RADIUS_KM = 6371;
+const toRadians = (degrees) => (degrees * Math.PI) / 180;
+
+/** Distance between two points in km (Haversine), for the live length preview. */
+function distanceKm(from, to) {
+  const latitudeDelta = toRadians(to.latitude - from.latitude);
+  const longitudeDelta = toRadians(to.longitude - from.longitude);
+  const a =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(toRadians(from.latitude)) *
+      Math.cos(toRadians(to.latitude)) *
+      Math.sin(longitudeDelta / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/** Length of a path of waypoints in km, to two decimals. */
+export function pathLengthKm(points) {
+  let total = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    total += distanceKm(points[index - 1], points[index]);
+  }
+  return Math.round(total * 100) / 100;
+}

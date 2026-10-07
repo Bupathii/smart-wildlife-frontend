@@ -55,8 +55,9 @@ Fully implemented:
 - `Dashboard` — summary cards (currently static placeholders, no live data wired yet)
 - `ConflictReports`, `ConflictReportDetails`, `ArchivedConflictReports`, `ConflictAnalytics`, `Reports` — the conflict-report module, backed end-to-end by the API
 - `Patrols` — **Monitor and Evaluate Ranger Patrol Activities** (Park Manager). `Patrols.jsx` holds the heading, tabs and nested routes: `/patrols` → `PatrolMonitoring` (dashboard, 30 s auto-refresh), `/patrols/filter` → `PatrolFilter`, `/patrols/completed` → `PatrolHistory`, `/patrols/:patrolId` → `PatrolDetails` (with `EvaluationForm`). Shared pieces: `components/PatrolMap.jsx` (Leaflet), `PatrolTable.jsx`, `PatrolWidgets.jsx` (badges, cards, loading / empty / error states), `api/patrols.js`, `hooks/usePatrolData.js` (loading + polling), `config/patrolUi.js` (labels, colours, formatters). Needs sample data: run `npm run seed:patrols` in the backend.
+- `PatrolRoutes` — create, edit and delete patrol routes by clicking waypoints on the map (`components/RouteEditorMap.jsx`). Park Manager and Admin can change routes; Ranger Supervisor can only view. Routes used by patrols cannot be deleted, and their waypoints are locked while a patrol is active.
 
 Not yet implemented (render via `PlaceholderPage`, no backing API):
-- `Rangers`, `PatrolRoutes`, `Incidents`, `Animals`, `RiskZones`, `Alerts`, `CameraTraps`, `Users`, `Settings`
+- `Rangers`, `Incidents`, `Animals`, `RiskZones`, `Alerts`, `CameraTraps`, `Users`, `Settings`
 
 When implementing one of these, the backend route/controller/model for it doesn't exist yet either — check the [backend README](../../backend/smart-wildlife-backend/README.md) status section first.
