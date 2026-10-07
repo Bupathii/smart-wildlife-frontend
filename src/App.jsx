@@ -114,7 +114,7 @@ function App() {
             />
 
             <Route
-              path="/patrols"
+              path="/patrols/*"
               element={
                 <RolePage pageKey="patrols">
                   <Patrols />
