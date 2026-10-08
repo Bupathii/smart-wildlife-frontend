@@ -12,6 +12,13 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
+export function resolveApiAssetUrl(assetUrl) {
+  if (!assetUrl || /^https?:\/\//i.test(assetUrl)) return assetUrl;
+
+  const apiOrigin = new URL(apiClient.defaults.baseURL, window.location.origin).origin;
+  return new URL(assetUrl, apiOrigin).toString();
+}
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
