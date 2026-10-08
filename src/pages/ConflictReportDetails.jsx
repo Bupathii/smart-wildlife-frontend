@@ -34,6 +34,7 @@ import {
   getConflictReportById,
   updateConflictResponse,
 } from '../api/conflicts';
+import { resolveApiAssetUrl } from '../api/client';
 
 /*
  * =====================================================
@@ -785,7 +786,7 @@ export default function ConflictReportDetails() {
                       }
                       onClick={() =>
                         window.open(
-                          evidence.url,
+                          resolveApiAssetUrl(evidence.url),
                           '_blank',
                           'noopener,noreferrer'
                         )
@@ -795,7 +796,7 @@ export default function ConflictReportDetails() {
                       <div className="aspect-[4/3] overflow-hidden bg-slate-100">
                         <img
                           src={
-                            evidence.url
+                            resolveApiAssetUrl(evidence.url)
                           }
                           alt={`Conflict evidence ${
                             index + 1
