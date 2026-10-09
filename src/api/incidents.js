@@ -28,3 +28,17 @@ export async function getIncidentReports({
   const { data } = await apiClient.get('/incidents', { params });
   return data;
 }
+
+/**
+ * Update the status of a single incident report.
+ * Allowed for ADMIN, PARK_MANAGER, RANGER_SUPERVISOR.
+ *
+ * @param {string} id             - Report MongoDB _id.
+ * @param {string} incidentStatus - New status value.
+ */
+export async function updateIncidentStatus(id, incidentStatus) {
+  const { data } = await apiClient.patch(`/incidents/${id}/status`, {
+    incidentStatus,
+  });
+  return data;
+}
