@@ -1,11 +1,15 @@
 import {
   AlertTriangle,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   Filter,
   ImageIcon,
+  LoaderCircle,
   MapPin,
   RefreshCw,
+  Save,
   Search,
   ShieldAlert,
   X,
@@ -17,10 +21,16 @@ import {
   useState,
 } from 'react';
 
-import { getIncidentReports } from '../api/incidents';
+import { getIncidentReports, updateIncidentStatus } from '../api/incidents';
 import { resolveApiAssetUrl } from '../api/client';
+import { getCurrentUser } from '../config/roleAccess';
 
-/* ─── filter option lists ────────────────────────────────────────── */
+/* ─── constants ───────────────────────────────────────────────────── */
+
+const PAGE_SIZE = 10;
+
+/** Roles that may change the status of an incident. */
+const CAN_EDIT_ROLES = new Set(['ADMIN', 'PARK_MANAGER', 'RANGER_SUPERVISOR']);
 
 const STATUS_OPTIONS = [
   { value: '',             label: 'All Statuses' },
@@ -28,6 +38,9 @@ const STATUS_OPTIONS = [
   { value: 'UNDER_REVIEW', label: 'Under Review' },
   { value: 'RESOLVED',     label: 'Resolved' },
 ];
+
+/** Status options for the edit dropdown (no "All" entry). */
+const STATUS_EDIT_OPTIONS = STATUS_OPTIONS.slice(1);
 
 const TYPE_OPTIONS = [
   { value: '',                 label: 'All Types' },
@@ -47,9 +60,18 @@ const SEVERITY_OPTIONS = [
   { value: 'CRITICAL', label: 'Critical' },
 ];
 
-const PAGE_SIZE = 10;
+const INITIAL_FILTERS = {
+  search: '',
+  incidentType: '',
+  incidentStatus: '',
+  severity: '',
+};
 
-/* ─── small pure helpers ─────────────────────────────────────────── */
+/* ─── pure helpers ────────────────────────────────────────────────── */
+
+function googleMapsUrl(lat, lng) {
+  return `https://www.google.com/maps?q=${lat},${lng}`;
+}
 
 function severityBadge(severity) {
   const map = {
@@ -86,12 +108,11 @@ function formatDate(iso) {
   });
 }
 
-/* ─── sub-components ─────────────────────────────────────────────── */
+/* ─── FilterBar ───────────────────────────────────────────────────── */
 
 function FilterBar({ filters, onChange, onReset, hasActive }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* search is client-side — we filter the fetched page */}
       <div className="relative">
         <Search
           size={15}
@@ -149,6 +170,8 @@ function FilterBar({ filters, onChange, onReset, hasActive }) {
   );
 }
 
+/* ─── IncidentRow ─────────────────────────────────────────────────── */
+
 function IncidentRow({ report, onSelect }) {
   const thumb = report.evidence?.[0]?.url
     ? resolveApiAssetUrl(report.evidence[0].url)
@@ -184,14 +207,22 @@ function IncidentRow({ report, onSelect }) {
         {report.ranger?.name ?? '—'}
       </td>
 
-      {/* Location */}
+      {/* Location — clicking opens Google Maps */}
       <td className="px-4 py-3">
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <MapPin size={12} className="shrink-0 text-teal-600" />
-          {report.location
-            ? `${report.location.latitude.toFixed(4)}, ${report.location.longitude.toFixed(4)}`
-            : '—'}
-        </span>
+        {report.location ? (
+          <a
+            href={googleMapsUrl(report.location.latitude, report.location.longitude)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-1 text-xs text-teal-700 underline underline-offset-2 hover:text-teal-900"
+          >
+            <MapPin size={12} className="shrink-0" />
+            {report.location.latitude.toFixed(4)}, {report.location.longitude.toFixed(4)}
+          </a>
+        ) : (
+          <span className="text-xs text-gray-400">—</span>
+        )}
       </td>
 
       {/* Severity */}
@@ -216,13 +247,135 @@ function IncidentRow({ report, onSelect }) {
   );
 }
 
-function IncidentDetailModal({ report, onClose }) {
+/* ─── Pagination ──────────────────────────────────────────────────── */
+
+/**
+ * Numbered pagination control matching the project's existing UI style.
+ * Shows prev / page-numbers / next with ellipsis for large page counts.
+ */
+function Pagination({ page, pages, onPageChange }) {
+  if (pages <= 1) return null;
+
+  /**
+   * Build the list of page numbers to show.
+   * Always includes first, last, current ±1, with '…' gaps.
+   */
+  function getPageNumbers() {
+    const range = new Set([1, pages, page, page - 1, page + 1]);
+    const sorted = [...range]
+      .filter((n) => n >= 1 && n <= pages)
+      .sort((a, b) => a - b);
+
+    const result = [];
+    let prev = null;
+    for (const n of sorted) {
+      if (prev !== null && n - prev > 1) result.push('…');
+      result.push(n);
+      prev = n;
+    }
+    return result;
+  }
+
+  const items = getPageNumbers();
+
+  return (
+    <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
+      <p className="text-xs text-gray-500">
+        Page {page} of {pages}
+      </p>
+
+      <div className="flex items-center gap-1">
+        {/* Previous */}
+        <button
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50"
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={16} />
+        </button>
+
+        {/* Numbered buttons */}
+        {items.map((item, idx) =>
+          item === '…' ? (
+            <span
+              key={`ellipsis-${idx}`}
+              className="flex h-8 w-8 items-center justify-center text-xs text-gray-400"
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={item}
+              onClick={() => onPageChange(item)}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-medium transition-colors ${
+                item === page
+                  ? 'border-teal-600 bg-teal-600 text-white'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+              aria-current={item === page ? 'page' : undefined}
+            >
+              {item}
+            </button>
+          )
+        )}
+
+        {/* Next */}
+        <button
+          disabled={page >= pages}
+          onClick={() => onPageChange(page + 1)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50"
+          aria-label="Next page"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── IncidentDetailModal ─────────────────────────────────────────── */
+
+/**
+ * @param {{ report: object, canEdit: boolean,
+ *           onClose: () => void,
+ *           onStatusUpdated: (updated: object) => void }} props
+ */
+function IncidentDetailModal({ report, canEdit, onClose, onStatusUpdated }) {
   if (!report) return null;
+
+  const [selectedStatus, setSelectedStatus] = useState(report.incidentStatus);
+  const [saving,         setSaving]         = useState(false);
+  const [saveError,      setSaveError]       = useState('');
+  const [saveSuccess,    setSaveSuccess]     = useState(false);
+
+  const isDirty = selectedStatus !== report.incidentStatus;
+
+  async function handleSave() {
+    if (!isDirty) return;
+    setSaving(true);
+    setSaveError('');
+    setSaveSuccess(false);
+    try {
+      const result = await updateIncidentStatus(report._id, selectedStatus);
+      setSaveSuccess(true);
+      onStatusUpdated(result.report);
+      // Auto-dismiss success after 1.5 s
+      setTimeout(() => setSaveSuccess(false), 1500);
+    } catch (err) {
+      setSaveError(
+        err?.response?.data?.message ?? 'Failed to update status. Please try again.'
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-        {/* Header */}
+
+        {/* ── Header ── */}
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <div className="flex items-center gap-2">
             <ShieldAlert size={20} className="text-teal-700" />
@@ -239,26 +392,79 @@ function IncidentDetailModal({ report, onClose }) {
         </div>
 
         <div className="space-y-5 p-6">
-          {/* Badges */}
+          {/* ── Status section ── */}
+          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Incident Status
+            </p>
+
+            {canEdit ? (
+              /* Editable dropdown for PARK_MANAGER / RANGER_SUPERVISOR */
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    setSelectedStatus(e.target.value);
+                    setSaveError('');
+                    setSaveSuccess(false);
+                  }}
+                  className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200"
+                >
+                  {STATUS_EDIT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={handleSave}
+                  disabled={!isDirty || saving}
+                  className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+                >
+                  {saving ? (
+                    <LoaderCircle size={15} className="animate-spin" />
+                  ) : saveSuccess ? (
+                    <CheckCircle2 size={15} />
+                  ) : (
+                    <Save size={15} />
+                  )}
+                  {saving ? 'Saving…' : saveSuccess ? 'Saved!' : 'Save Status'}
+                </button>
+
+                {saveError && (
+                  <p className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertTriangle size={13} />
+                    {saveError}
+                  </p>
+                )}
+              </div>
+            ) : (
+              /* Read-only badge for RESEARCHER */
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(report.incidentStatus)}`}>
+                  {formatLabel(report.incidentStatus)}
+                </span>
+                <span className="text-xs text-gray-400">(read-only)</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Severity + source badges ── */}
           <div className="flex flex-wrap gap-2">
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${severityBadge(report.severity)}`}>
               {formatLabel(report.severity)} Severity
-            </span>
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(report.incidentStatus)}`}>
-              {formatLabel(report.incidentStatus)}
             </span>
             <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
               {report.location?.source ?? '—'} Location
             </span>
           </div>
 
-          {/* Description */}
+          {/* ── Description ── */}
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Description</p>
             <p className="text-sm leading-relaxed text-gray-700">{report.description}</p>
           </div>
 
-          {/* Details grid */}
+          {/* ── Details grid ── */}
           <div className="grid grid-cols-2 gap-4 rounded-xl bg-gray-50 p-4 text-sm">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Reported By</p>
@@ -271,15 +477,23 @@ function IncidentDetailModal({ report, onClose }) {
             </div>
             <div className="col-span-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">GPS Coordinates</p>
-              <p className="mt-1 font-medium text-gray-800">
-                {report.location
-                  ? `${report.location.latitude.toFixed(6)}, ${report.location.longitude.toFixed(6)}`
-                  : '—'}
-              </p>
+              {report.location ? (
+                <a
+                  href={googleMapsUrl(report.location.latitude, report.location.longitude)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex items-center gap-1.5 font-medium text-teal-700 underline underline-offset-2 hover:text-teal-900"
+                >
+                  <MapPin size={13} className="shrink-0" />
+                  {report.location.latitude.toFixed(6)}, {report.location.longitude.toFixed(6)}
+                </a>
+              ) : (
+                <p className="mt-1 font-medium text-gray-800">—</p>
+              )}
             </div>
           </div>
 
-          {/* Evidence photos */}
+          {/* ── Evidence photos ── */}
           {report.evidence?.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
@@ -310,26 +524,32 @@ function IncidentDetailModal({ report, onClose }) {
   );
 }
 
-/* ─── main page ──────────────────────────────────────────────────── */
-
-const INITIAL_FILTERS = {
-  search: '',
-  incidentType: '',
-  incidentStatus: '',
-  severity: '',
-};
+/* ─── Main page ───────────────────────────────────────────────────── */
 
 export default function Incidents() {
-  const [reports,  setReports]  = useState([]);
-  const [total,    setTotal]    = useState(0);
-  const [pages,    setPages]    = useState(1);
-  const [page,     setPage]     = useState(1);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-  const [filters,  setFilters]  = useState(INITIAL_FILTERS);
-  const [selected, setSelected] = useState(null);
+  const currentUser = useMemo(() => getCurrentUser(), []);
 
-  /* Fetch whenever server-side filters or page change */
+  /**
+   * True when the logged-in user is allowed to change incident status.
+   * RESEARCHER can only read.
+   */
+  const canEdit = CAN_EDIT_ROLES.has(currentUser?.role);
+
+  const [reports,    setReports]    = useState([]);
+  const [total,      setTotal]      = useState(0);
+  const [pages,      setPages]      = useState(1);
+  const [page,       setPage]       = useState(1);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [filters,    setFilters]    = useState(INITIAL_FILTERS);
+  const [selected,   setSelected]   = useState(null);
+  /**
+   * Incrementing refreshKey forces a re-fetch even when page/filters
+   * haven't changed — used by the Refresh button.
+   */
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  /* Fetch whenever server-side filters, page, or refreshKey change */
   useEffect(() => {
     let cancelled = false;
 
@@ -358,9 +578,9 @@ export default function Incidents() {
 
     load();
     return () => { cancelled = true; };
-  }, [page, filters.incidentType, filters.incidentStatus, filters.severity]);
+  }, [page, filters.incidentType, filters.incidentStatus, filters.severity, refreshKey]);
 
-  /* Client-side search (over the current page) */
+  /* Client-side search over the current page */
   const visible = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     if (!q) return reports;
@@ -379,6 +599,24 @@ export default function Incidents() {
   function handleReset() {
     setFilters(INITIAL_FILTERS);
     setPage(1);
+  }
+
+  /** Force a network re-fetch without changing filters or page. */
+  function handleRefresh() {
+    setRefreshKey((k) => k + 1);
+  }
+
+  /**
+   * Called when a status update succeeds inside the modal.
+   * Patches the report in-place in the list so the table reflects
+   * the new status immediately without a full re-fetch.
+   */
+  function handleStatusUpdated(updatedReport) {
+    setReports((prev) =>
+      prev.map((r) => (r._id === updatedReport._id ? updatedReport : r))
+    );
+    // Also update the selected report shown in the modal
+    setSelected(updatedReport);
   }
 
   const hasActive =
@@ -402,7 +640,7 @@ export default function Incidents() {
         </div>
 
         <button
-          onClick={handleReset}
+          onClick={handleRefresh}
           disabled={loading}
           className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm hover:bg-gray-50 disabled:opacity-50"
         >
@@ -422,7 +660,7 @@ export default function Incidents() {
         />
       </div>
 
-      {/* ── Content ── */}
+      {/* ── Error banner ── */}
       {error && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle size={16} />
@@ -430,6 +668,15 @@ export default function Incidents() {
         </div>
       )}
 
+      {/* ── Role notice for read-only users ── */}
+      {!canEdit && !loading && (
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-2.5 text-xs text-blue-700">
+          <Clock3 size={14} className="shrink-0" />
+          You have read-only access.
+        </div>
+      )}
+
+      {/* ── Table / empty / loading ── */}
       {loading ? (
         <div className="flex h-64 items-center justify-center">
           <RefreshCw size={24} className="animate-spin text-teal-600" />
@@ -472,38 +719,22 @@ export default function Incidents() {
             </tbody>
           </table>
 
-          {/* Pagination */}
-          {pages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-              <p className="text-xs text-gray-500">
-                Page {page} of {pages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  disabled={page >= pages}
-                  onClick={() => setPage((p) => p + 1)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 disabled:opacity-40 hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Numbered pagination */}
+          <Pagination
+            page={page}
+            pages={pages}
+            onPageChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          />
         </div>
       )}
 
-      {/* ── Detail modal ── */}
+      {/* ── Detail / status modal ── */}
       {selected && (
         <IncidentDetailModal
           report={selected}
+          canEdit={canEdit}
           onClose={() => setSelected(null)}
+          onStatusUpdated={handleStatusUpdated}
         />
       )}
     </div>
