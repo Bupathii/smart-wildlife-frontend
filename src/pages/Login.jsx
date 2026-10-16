@@ -8,7 +8,6 @@ import {
   EyeOff,
   FlaskConical,
   HeartHandshake,
-  Leaf,
   LockKeyhole,
   Mail,
   MapPinned,
@@ -209,7 +208,7 @@ function Login() {
     Boolean(demoLoading);
 
   return (
-    <main className="min-h-dvh bg-[#f4f8fb]">
+    <main className="ws-login min-h-dvh bg-[#f4f8fb]">
 
       <div className="grid min-h-dvh lg:grid-cols-[0.95fr_1.05fr] xl:grid-cols-[1fr_1fr]">
 
@@ -217,11 +216,11 @@ function Login() {
             LEFT BRANDING SECTION
         ========================== */}
 
-        <section className="relative hidden overflow-hidden lg:flex">
+        <section className="ws-login-left relative hidden overflow-hidden lg:flex">
 
           {/* Main gradient */}
 
-          <div className="absolute inset-0 bg-gradient-to-br from-[#071d3a] via-[#073b4c] to-[#075941]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#051a16] via-[#073b2e] to-[#155442]" />
 
           {/* Soft blue glow */}
 
@@ -253,24 +252,22 @@ function Login() {
             <div className="flex items-center gap-3.5">
 
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-emerald-300 shadow-xl shadow-black/10 backdrop-blur-xl">
-                <Leaf
-                  size={25}
-                  strokeWidth={2}
-                />
+                <img src="/brand/wildsentinel-crest.webp" alt="WildSentinel" className="ws-login-small-logo" />
               </div>
 
               <div>
                 <p className="text-[15px] font-bold tracking-wide text-white">
-                  Wildlife Conservation
+                  WildSentinel
                 </p>
 
                 <p className="mt-0.5 text-xs text-cyan-100/55">
-                  Smart Operations Platform
+                  Conservation Intelligence
                 </p>
               </div>
             </div>
 
-            {/* Main hero */}
+            <div className="ws-login-crest-watermark" aria-hidden="true"><img src="/brand/wildsentinel-crest.webp" alt="" /></div>
+          {/* Main hero */}
 
             <div className="max-w-[620px] py-12">
 
@@ -290,7 +287,7 @@ function Login() {
 
                 Protect wildlife with
 
-                <span className="block bg-gradient-to-r from-cyan-300 via-teal-300 to-emerald-300 bg-clip-text text-transparent">
+                <span className="block bg-gradient-to-r from-amber-200 via-[#e7c488] to-emerald-200 bg-clip-text text-transparent">
                   connected intelligence.
                 </span>
               </h1>
@@ -360,7 +357,7 @@ function Login() {
             RIGHT LOGIN SECTION
         ========================== */}
 
-        <section className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-6 sm:px-6 sm:py-10 md:px-10 lg:px-10 xl:px-14">
+        <section className="ws-login-right relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-6 sm:px-6 sm:py-10 md:px-10 lg:px-10 xl:px-14">
 
           {/* Mobile background decoration */}
 
@@ -374,19 +371,19 @@ function Login() {
 
             <div className="mb-7 flex items-center gap-3 lg:hidden">
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 via-teal-700 to-emerald-700 text-white shadow-lg shadow-blue-900/15">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-800 via-teal-800 to-emerald-700 text-white shadow-lg shadow-blue-900/15">
 
-                <Leaf size={24} />
+                <img src="/brand/wildsentinel-crest.webp" alt="WildSentinel" className="ws-login-small-logo" />
 
               </div>
 
               <div>
                 <p className="font-bold text-slate-900">
-                  Wildlife Conservation
+                  WildSentinel
                 </p>
 
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Operations Dashboard
+                  Conservation Operations
                 </p>
               </div>
 
@@ -394,7 +391,7 @@ function Login() {
 
             {/* Login card */}
 
-            <div className="rounded-[24px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_70px_-35px_rgba(15,23,42,0.25)] backdrop-blur-xl sm:p-7 md:p-8 xl:p-9">
+            <div className="ws-login-card rounded-[24px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_20px_70px_-35px_rgba(15,23,42,0.25)] backdrop-blur-xl sm:p-7 md:p-8 xl:p-9">
 
               {/* Header */}
 
@@ -418,8 +415,8 @@ function Login() {
                 </h2>
 
                 <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                  Sign in to access the Wildlife
-                  Conservation Operations Dashboard.
+                  Sign in to access the WildSentinel
+                  Conservation Operations Platform.
                 </p>
 
               </div>
