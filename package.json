@@ -9,7 +9,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:patrol": "node --import ./tests/patrol/register.mjs --test --test-concurrency=1 --test-reporter=spec tests/patrol/*.test.mjs",
+    "test:coverage:patrol": "node --import ./tests/patrol/register.mjs --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include=src/api/patrols.js --test-coverage-include=src/config/patrolUi.js --test-coverage-include=src/utils/patrolRules.js --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80 tests/patrol/*.test.mjs"
   },
   "dependencies": {
     "axios": "^1.7.9",

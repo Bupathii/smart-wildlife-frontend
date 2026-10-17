@@ -62,3 +62,12 @@ Not yet implemented (render via `PlaceholderPage`, no backing API):
 - `Rangers`, `Incidents`, `Animals`, `RiskZones`, `Alerts`, `CameraTraps`, `Users`, `Settings`
 
 When implementing one of these, the backend route/controller/model for it doesn't exist yet either — check the [backend README](../../backend/smart-wildlife-backend/README.md) status section first.
+
+## Patrol tests
+
+```bash
+npm run test:patrol            # 28 tests, Node built-in test runner (no extra packages needed)
+npm run test:coverage:patrol   # same, with the coverage table (minimum 80%)
+```
+
+Tests are in `tests/patrol/*.test.mjs`. They cover the patrol API calls (`src/api/patrols.js`, with the Axios client swapped for `tests/patrol/fakeApiClient.mjs` by a Node module hook), display helpers (`src/config/patrolUi.js`) and form rules (`src/utils/patrolRules.js`). They are separate from the Vitest setup used by `npm test`.
