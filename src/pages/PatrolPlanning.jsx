@@ -19,51 +19,18 @@ import {
 import { Card, EmptyState, ErrorState, LoadingState } from '../components/PatrolWidgets';
 import { getCurrentUser } from '../config/roleAccess';
 import {
-  OPEN_PATROL_STATUSES,
-  PATROL_DEFAULT_DURATION_HOURS,
   ROUTE_MANAGER_ROLES,
   formatDateTime,
   rangerNames,
-  toDateTimeInput,
 } from '../config/patrolUi';
 import usePatrolData, { useParkMap } from '../hooks/usePatrolData';
+import { findBusyRangers, planToDraft } from '../utils/patrolRules';
 
 const loadAllPatrols = () => getPatrols();
-const HOUR_MS = 3_600_000;
 const INPUT_STYLE =
   'w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500';
 const BUTTON_STYLE =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100';
-
-/** A blank plan starting in 30 minutes, or a copy of a planned patrol to edit. */
-function toDraft(patrol) {
-  const start = patrol ? new Date(patrol.startTime) : new Date(Date.now() + HOUR_MS / 2);
-  const end = patrol
-    ? new Date(patrol.endTime)
-    : new Date(start.getTime() + PATROL_DEFAULT_DURATION_HOURS * HOUR_MS);
-
-  return {
-    patrolId: patrol?.patrolId ?? null,
-    routeId: patrol?.route.routeId ?? '',
-    rangerIds: patrol?.rangers.map((ranger) => ranger.rangerId) ?? [],
-    startTime: toDateTimeInput(start),
-    endTime: toDateTimeInput(end),
-  };
-}
-
-/** Which patrol (planned or in the field) each ranger is already on. */
-function busyRangers(patrols, ownPatrolId) {
-  const busy = {};
-  patrols
-    .filter((patrol) => OPEN_PATROL_STATUSES.includes(patrol.status))
-    .filter((patrol) => patrol.patrolId !== ownPatrolId)
-    .forEach((patrol) => {
-      patrol.rangers.forEach((ranger) => {
-        busy[ranger.rangerId] = patrol.patrolId;
-      });
-    });
-  return busy;
-}
 
 /** Checkbox list of rangers; those on another patrol cannot be picked. */
 function RangerPicker({ rangers, busy, selected, onChange, disabled }) {
@@ -267,7 +234,7 @@ export default function PatrolPlanning() {
   const patrols = usePatrolData(loadAllPatrols);
   const rangerList = usePatrolData(getRangers);
   const parkMap = useParkMap();
-  const [draft, setDraft] = useState(() => toDraft(null));
+  const [draft, setDraft] = useState(() => planToDraft(null));
   const [errors, setErrors] = useState({});
   const [failure, setFailure] = useState('');
   const [notice, setNotice] = useState('');
@@ -286,7 +253,7 @@ export default function PatrolPlanning() {
     .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
   function resetForm(message = '') {
-    setDraft(toDraft(null));
+    setDraft(planToDraft(null));
     setErrors({});
     setFailure('');
     setNotice(message);
@@ -348,7 +315,7 @@ export default function PatrolPlanning() {
               onCancel={() => resetForm()}
               routes={parkMap.data?.routes ?? []}
               rangers={rangerList.data ?? []}
-              busy={busyRangers(allPatrols, draft.patrolId)}
+              busy={findBusyRangers(allPatrols, draft.patrolId)}
               errors={errors}
               failure={failure}
               saving={saving}
@@ -361,7 +328,7 @@ export default function PatrolPlanning() {
             patrols={planned}
             canManage={canManage}
             onEdit={(patrol) => {
-              setDraft(toDraft(patrol));
+              setDraft(planToDraft(patrol));
               setErrors({});
               setFailure('');
               setNotice('');
