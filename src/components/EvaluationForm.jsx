@@ -4,25 +4,13 @@ import { CheckCircle2, Star } from 'lucide-react';
 
 import { readApiError, savePatrolEvaluation } from '../api/patrols';
 import { getCurrentUser } from '../config/roleAccess';
+import { validateEvaluation } from '../utils/patrolRules';
 import {
   DEMO_MANAGER_ID,
   MAX_RATING,
   NOTES_MAX_LENGTH,
-  NOTES_REQUIRED_AT_OR_BELOW,
   formatDateTime,
 } from '../config/patrolUi';
-
-/** Checks the same rules as the server so mistakes show immediately. */
-function validate(rating, notes) {
-  const errors = {};
-  if (!rating) errors.rating = 'Rating is required';
-  if (notes.length > NOTES_MAX_LENGTH) {
-    errors.notes = `Notes must be ${NOTES_MAX_LENGTH} characters or fewer`;
-  } else if (rating && rating <= NOTES_REQUIRED_AT_OR_BELOW && notes.trim() === '') {
-    errors.notes = `Notes are required when the rating is ${NOTES_REQUIRED_AT_OR_BELOW} or lower`;
-  }
-  return errors;
-}
 
 /** Clickable 1-5 stars. */
 function StarInput({ value, onChange, disabled }) {
@@ -75,7 +63,7 @@ export default function EvaluationForm({ patrolId, evaluation, canEvaluate, onSa
     setSaved(false);
     setFailure('');
 
-    const problems = validate(rating, notes);
+    const problems = validateEvaluation(rating, notes);
     setErrors(problems);
     if (Object.keys(problems).length > 0) return;
 
