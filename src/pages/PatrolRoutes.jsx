@@ -24,38 +24,17 @@ import {
   DEFAULT_PARK_ID,
   ROUTE_DESCRIPTION_MAX_LENGTH,
   ROUTE_MANAGER_ROLES,
-  ROUTE_MIN_WAYPOINTS,
   ROUTE_NAME_MAX_LENGTH,
   pathLengthKm,
 } from '../config/patrolUi';
 import usePatrolData, { useParkMap } from '../hooks/usePatrolData';
+import { routeToDraft, validateRouteDraft } from '../utils/patrolRules';
 
 const loadRoutes = () => getRoutes(DEFAULT_PARK_ID);
 const INPUT_STYLE =
   'w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500';
 const BUTTON_STYLE =
   'inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50';
-
-/** Checks the same rules as the server so mistakes show immediately. */
-function validate(draft) {
-  const errors = {};
-  if (draft.name.trim() === '') errors.name = 'Route name is required';
-  if (draft.waypoints.length < ROUTE_MIN_WAYPOINTS) {
-    errors.waypoints = `A route needs at least ${ROUTE_MIN_WAYPOINTS} waypoints`;
-  }
-  return errors;
-}
-
-/** A blank form, or a copy of an existing route ready to edit. */
-function toDraft(route) {
-  return {
-    routeId: route?.routeId ?? null,
-    name: route?.name ?? '',
-    description: route?.description ?? '',
-    waypoints: (route?.waypoints ?? []).map(({ latitude, longitude }) => ({ latitude, longitude })),
-    locked: Boolean(route?.hasActivePatrol),
-  };
-}
 
 /** How a route is being used by patrols. */
 function UsageBadge({ route }) {
@@ -279,7 +258,7 @@ export default function PatrolRoutes() {
       .join(', ');
 
   function startEditing(route) {
-    setDraft(toDraft(route));
+    setDraft(routeToDraft(route));
     setSelectedId(route?.routeId ?? null);
     setErrors({});
     setFailure('');
@@ -287,7 +266,7 @@ export default function PatrolRoutes() {
   }
 
   async function saveDraft() {
-    const problems = validate(draft);
+    const problems = validateRouteDraft(draft);
     setErrors(problems);
     setFailure('');
     if (Object.keys(problems).length > 0) return;
