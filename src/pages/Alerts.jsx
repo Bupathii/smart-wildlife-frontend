@@ -24,7 +24,10 @@ import {
   TileLayer,
 } from 'react-leaflet';
 
-import apiClient from '../api/client';
+import {
+  getTrackingAlerts,
+  updateTrackingAlert,
+} from '../api/tracking';
 
 const ACTION_STYLES = {
   acknowledge: 'bg-emerald-600 hover:bg-emerald-700',
@@ -140,8 +143,7 @@ export default function Alerts() {
         setError('');
       }
 
-      const { data } = await apiClient.get('/tracking/alerts');
-      setAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
+      setAlerts(await getTrackingAlerts());
     } catch (err) {
       if (!silent) {
         setError(err?.response?.data?.message || 'Unable to load wildlife alerts.');
@@ -155,22 +157,7 @@ export default function Alerts() {
     try {
       setBusyId(alertId);
 
-      if (action === 'acknowledge') {
-        await apiClient.post(`/tracking/alerts/${alertId}/acknowledge`);
-      } else if (action === 'response') {
-        await apiClient.put(`/tracking/alerts/${alertId}/response`, {
-          responseType: 'INVESTIGATE',
-          notes: 'Response initiated by dashboard ranger.',
-        });
-      } else if (action === 'resolve') {
-        await apiClient.put(`/tracking/alerts/${alertId}/resolve`, {
-          notes: 'Resolved through dashboard action.',
-        });
-      } else if (action === 'escalate') {
-        await apiClient.put(`/tracking/alerts/${alertId}/escalate`, {
-          notes: 'Escalated from dashboard.',
-        });
-      }
+      await updateTrackingAlert(alertId, action);
 
       await loadAlerts();
     } catch (err) {
